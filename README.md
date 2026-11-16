@@ -1,93 +1,74 @@
-# Jupyter Image Scaler · 附件图片缩放
+# Jupyter Image Scaler
 
-给 VS Code 的 `.ipynb` Markdown 附件图片提供悬浮缩放菜单：**25% / 50% / 75% / 100%**，支持自定义比例、像素尺寸和快捷档位。保留原始附件，不压缩原图。
+English | [简体中文](README.zh-CN.md)
 
-> **按钮能打开、选比例却没有变化？** 安装或更新后，请在使用图片的那个 VS Code 窗口运行 `⌘⇧P` → **开发人员：重新加载窗口**。扩展命令可用不代表已经打开的 Notebook 加载了新图片渲染器。先保存文件，再重新加载并选择比例。
+Resize Markdown attachment images in VS Code Jupyter Notebooks with a compact hover toolbar. Switch between **25%, 50%, 75%, and 100%**, add custom percentages or pixel dimensions, and keep the original image data intact.
 
-## 操作示例
+> The extension UI is currently in Chinese. After installing or updating, save your Notebook and run **Developer: Reload Window** in the VS Code window where you use it. An already-open Notebook may still be using the previous image renderer.
 
-运行 Markdown 单元格后，鼠标移到图片上即可使用紧凑比例菜单，当前档位会高亮。齿轮可切换为图片外部菜单，避免遮挡；自动选择两侧空位，空间不足时放到图片下方。
+## Preview
 
-![紧凑外部菜单：快捷比例、自定义尺寸和齿轮](docs/images/外部菜单.png)
+Hover over a rendered image to show its shortcuts. The active preset is highlighted. Use the gear to manage presets or move the toolbar outside the image with automatic placement.
 
-## 安装和使用
+![Compact external toolbar with percentage and custom-size shortcuts](docs/images/外部菜单.png)
 
-1. 在 VS Code 扩展面板右上角的 `…` 菜单选择 **从 VSIX 安装… / Install from VSIX…**，选择 `releases/jupyter-image-scaler-1.2.0.vsix`。
-2. 如果 Notebook 已打开，执行 **Developer: Reload Window（开发人员：重新加载窗口）**，使新渲染器生效。
-3. 打开 `.ipynb`，在 Markdown 单元格粘贴图片，保留原来的 `![image.png](attachment:image.png)` 写法。
-4. 在图片预览状态把鼠标移到图片上，点击比例按钮；齿轮可设置自定义尺寸或管理快捷档位。编辑模式下，单元格下方也显示相同档位。
-5. 如果使用编辑模式按钮，点击单元格右上角的“停止编辑”查看效果（焦点在文字编辑区时也可按 Esc），再保存 Notebook，比例会随文件保留。100% 移除该附件的缩放设置，恢复默认显示。
+## Install and use
 
-在图片预览模式下，可以点击单元格右上角的放大镜按钮，或选中单元格后按 **⌘⌥I**（macOS）或 **Ctrl+Alt+I**（Windows / Linux），选择图片和比例；或打开命令面板搜索 **附件图片缩放**。VS Code 会在 Markdown 编辑模式显示单元格下方按钮；如果编辑时仍未显示，在设置中把 `Notebook: Show Cell Status Bar` 设为 `visible`，或直接使用快捷键。
+1. Download `jupyter-image-scaler-1.2.0.vsix` from [GitHub Releases](https://github.com/CurtisYan/jupyter-image-scaler/releases/latest).
+2. In VS Code, open Extensions → **…** → **Install from VSIX…**, then select the downloaded file.
+3. Save your work and run **Developer: Reload Window** from the Command Palette.
+4. Open an `.ipynb` file and paste an image into a Markdown cell. Keep the native attachment syntax: `![image.png](attachment:image.png)`.
+5. Render the cell, hover over the image, and click a preset. Save the Notebook to retain its display size. **100%** restores the default display.
 
-## 自定义档位和尺寸
+You can also use the buttons below a cell while editing, the magnifier in its toolbar, or **Cmd+Alt+I** on macOS / **Ctrl+Alt+I** on Windows and Linux. Search for **附件图片缩放** in the Command Palette. If edit-mode buttons are hidden, set **Notebook: Show Cell Status Bar** to `visible`.
 
-点击图片旁的 **⚙**：
+Try the [example Notebook](https://github.com/CurtisYan/jupyter-image-scaler/blob/main/examples/附件图片缩放示例.ipynb).
 
-- **添加百分比快捷档位**：输入 1–100 的整数，例如 `60`，生成 `60%` 按钮。
-- **自定义尺寸：应用到这张图**：输入 `320` 表示宽 320px、高度等比；输入 `320x180` 指定宽高，可能改变原图比例。应用后可选择同时保存为快捷档位。
-- **添加尺寸快捷档位**：直接保存常用尺寸，之后点击对应按钮即可应用。
-- **调整档位顺序**：选中档位后可上移、下移、移到最前或最后；每次移动立即保存，并同步到编辑模式按钮。
-- **切换菜单样式**：选择左上角悬浮，或图片外部（自动避让）。外部样式保持图片原有尺寸，自动选择图片两侧空位，放不下时移到下方，避免遮挡图片及后续内容。
-- 可删除档位或恢复默认四档；最多保留 12 档。档位保存在 VS Code 用户设置 `jupyterImageScaler.presets`，菜单样式保存在 `jupyterImageScaler.toolbarStyle`，所有 Notebook 共用。图片实际尺寸保存在当前 Notebook，独立于快捷按钮。
+## Presets and toolbar settings
 
-像素宽度受单元格可用宽度限制。悬浮菜单也支持 Tab 键聚焦显示。没有唯一 ID、内容又完全相同的旧单元格若无法准确定位，会提示使用该单元格右上角的放大镜。
+Click the **gear** beside an image:
 
-## 比例和保存方式
+- **Custom percentage:** add any integer from 1 to 100 as a shortcut.
+- **Custom dimensions:** enter `320` for a 320px width with the aspect ratio preserved, or `320x180` for exact dimensions. Specifying both dimensions can change the aspect ratio. Apply to the current image and optionally save it as a preset, or add a size preset directly.
+- **Reorder shortcuts:** move a preset up, down, to the start, or to the end. Changes save immediately and also update edit-mode buttons.
+- **Toolbar style:** choose a top-left overlay or **outside the image (automatic placement)**. Outside mode uses available space beside the image; if neither side fits, it reserves space below. It keeps the image size and avoids covering subsequent content.
+- **Manage presets:** delete shortcuts or restore the four defaults. Up to 12 presets are supported.
 
-- 比例以默认显示宽度为基准，即原图宽度与单元格可用宽度中的较小值。大图以铺满单元格为 100%，75% 显示为可用宽度的四分之三；小图以原图宽度为 100%。高度自动等比调整。
-- 每次均以默认显示宽度计算。先选择 25% 再选 50%，结果仍是默认宽度的一半，不会连续累乘。窗口宽度改变时会自动适配。
-- 100% 恢复默认显示。四档比例对大图也有区别，原图像素和附件数据均不改变。
-- 比例菜单默认高亮当前比例；100% 是未设置缩放时的默认选项。
-- 只修改当前单元格里选中的附件；同名附件在同一单元格内多次引用时一起变化，其他单元格不受影响。
-- 图片二进制数据保持原样，仍保存在 `.ipynb` 的 `attachments` 中。显示比例写入单元格 `metadata.jupyterImageScaler`。支持 Notebook 原生撤销/重做。
-- 无网络请求、无遥测、不需要 Python 内核。运行时依赖已包含在安装包中，无需安装 Node.js。
+Presets and their order are saved in the user setting `jupyterImageScaler.presets`; the toolbar style is stored in `jupyterImageScaler.toolbarStyle`. They are shared across Notebooks. Each image's applied size is saved separately in its Notebook. The toolbar can also be shown by keyboard focus using Tab.
 
-## VS Code / Jupyter 限制
+## How scaling works
 
-**不要把附件改成 `<img src="attachment:image.png">`。** 当前 VS Code 自带的 Notebook 附件处理器只在 Markdown 图片 token 上把 `attachment:` 转换成图片数据；普通 HTML 标签不会经过这一步。这也是之前改成 HTML 后图片无法显示的原因。本扩展扩展同一个 Notebook 渲染器，在转换附件地址之前给图片加上显示宽度。
+- Percentages use the **default visible width**: the smaller of the original image width and the available cell width. A large image at 75% occupies three quarters of the cell width; a small image at 100% retains its natural width.
+- Each selection starts from that default width. Selecting 25% and then 50% gives half of the default width. Percentage sizes adapt when the window width changes; pixel widths are also limited by the available cell width.
+- Only the chosen attachment in the current cell changes. Repeated references to that attachment in the same cell share a size; other cells are independent. If an older cell cannot be uniquely identified, use its cell-toolbar magnifier.
+- Original bytes stay in `.ipynb` attachments. Display settings are stored in `metadata.jupyterImageScaler`, with native Notebook undo, redo, and save support.
+- No network requests, telemetry, or Python kernel are needed. Runtime dependencies are bundled; installing the extension does not require Node.js.
 
-**缩放效果需要本扩展。** 在未安装扩展的另一台电脑、JupyterLab、浏览器 Notebook 或 GitHub 预览中，原图仍然嵌入文件，但这个自定义比例可能被忽略，按默认大小显示。这里交付的是 VS Code 专用的无损显示缩放，不承诺跨编辑器显示尺寸一致。导出 HTML / PDF 的尺寸由导出工具决定。
+## Compatibility and updates
 
-**优先保留 VS Code 粘贴生成的简单附件文件名和行内引用。** 在实测的 VS Code 1.145.2 中，内置保存清理器直接匹配 Markdown 源码中的附件名，不能可靠识别 URL 编码后的空格名称（例如附件名 `second image.png`，源码却写 `second%20image.png`），保存时可能移除该附件；引用式图片和带 title 的附件引用也存在匹配限制。本扩展不改写源码、不接管自带附件清理器。推荐 `![image.png](attachment:image.png)` 这种原生粘贴写法；不要为设置比例而手动添加 title 或更换引用语法。
+Requires **VS Code 1.100.0 or later**. Tested in a real window on **macOS with VS Code 1.145.2**; other platforms and older versions have not had real-window testing. Only Markdown **attachment images** are supported; code outputs, remote images, and external image files are outside the current scope.
 
-支持可读取尺寸的常见 PNG、JPEG、GIF、WebP、BMP、SVG 等附件；损坏或无法读取尺寸的图片会提示错误，不改动附件。当前功能仅用于 Markdown 附件，不处理代码输出图、网络图或外部文件。最低声明版本 VS Code 1.100，已在 macOS / VS Code 1.145.2 实测；其他系统和旧版未做真实窗口测试。
+Keep the simple native attachment syntax shown above. Do not replace it with `<img src="attachment:...">`: VS Code's attachment renderer resolves Markdown image tokens. Prefer names generated by native paste; URL-encoded names, reference-style images, and image titles can encounter VS Code attachment-cleanup limitations on save. This extension does not rewrite the source or replace that cleanup process.
 
-## 现有扩展核查（2026-11-16）
+Custom sizes require this extension to display. JupyterLab, GitHub previews, other editors, and export tools may ignore the size metadata; the original image remains embedded. Damaged images or unsupported dimensions produce an error without changing the attachment.
 
-未找到经核实同时提供 ipynb 原生附件和 25% / 50% / 75% 快捷预设的现成扩展；这不代表市场上绝对不存在其他产品。
+**Updates:** this extension is distributed as a VSIX through GitHub Releases and is not published to Visual Studio Marketplace. VS Code's Auto Update checks the extension gallery, not GitHub tags or Releases. Download a newer VSIX and install it to update, then reload the window. See [VS Code's extension documentation](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#extension-auto-update).
 
-| 扩展 | 已核实功能 | 与本需求的差异 |
-| --- | --- | --- |
-| [JupyterNotebook Image Editor](https://marketplace.visualstudio.com/items?itemName=TDR474.drag-and-drop-images) | 插入、裁剪、自定义宽高 | 没有文档证据证明支持既有附件的百分比快捷操作；本机 1.1.0 也未发现这些预设 |
-| [MiConvert Image Tools](https://marketplace.visualstudio.com/items?itemName=MiConvert.miconvert-image-tools) | 25%、50%、75% 图片文件缩放 | 文档指向文件/目录处理，没有证据支持 Notebook 内部 attachments |
-| [Markdown Image Resize Viewer](https://marketplace.visualstudio.com/items?itemName=MetroSoft-Application.markdown-image-resize-viewer) | `.md` 自定义编辑器拖动缩放 | 不是 ipynb Markdown 单元格的原生附件缩放 |
-| [Markdown Imsize Support](https://marketplace.visualstudio.com/items?itemName=amoosbr.markdown-imsize) | 普通 Markdown 预览中的图片尺寸语法 | 需手写语法，未证明支持 Notebook 附件与快捷预设 |
-
-实现参考：[VS Code Notebook API](https://code.visualstudio.com/api/extension-guides/notebook)、[NotebookEdit API](https://code.visualstudio.com/api/references/vscode-api#NotebookEdit)。附件处理与保存限制还核对了本机 VS Code 内置 `ipynb` 扩展的 `cellAttachmentRenderer.js` 与 `ipynbMain.node.js`。
-
-## 源码构建和测试
+## Development
 
 ```sh
 npm ci
-npm run build
 npm test
-npm run package
+npm run build
+npm run package -- --out releases/jupyter-image-scaler-1.2.0.vsix
 ```
 
-源码包提供单元测试、真实 VS Code 扩展宿主测试和 Notebook 页面交互测试。`test/integration.cjs` 可通过 VS Code 的 `--extensionDevelopmentPath` / `--extensionTestsPath` 运行；`test/browser.cjs` 检查旧版命令交互，`test/hover.cjs` 检查悬浮按钮、自定义档位、尺寸和同名图片定位，可通过 `JIS_RUN` 与 `JIS_CDP` 指定独立测试目录及本机调试端口。只在单独测试窗口启用该端口，完成后退出窗口。
+- `src/`: extension commands, image metadata logic, and Notebook renderer.
+- `test/`: unit, extension-host, and interface tests; `test/results/` contains recorded results.
+- `examples/`: sample Notebook.
+- `docs/`: screenshots, test records, and [earlier extension research (Chinese)](https://github.com/CurtisYan/jupyter-image-scaler/blob/main/docs/extension-research.zh-CN.md).
+- `releases/`: installable VSIX packages. `dist/` and `node_modules/` are generated locally.
 
-许可证：MIT。安装包为本地开发版，未发布到 Marketplace，也未通过 Marketplace 签名。
+Version 1.2.0 passed 8 unit tests, 9 extension-host checks, and 16 interface checks against the installed VSIX. See the [test record (Chinese)](https://github.com/CurtisYan/jupyter-image-scaler/blob/main/docs/v1.2.0-测试记录.md). Integration tooling: `test/integration.cjs` runs through VS Code's `--extensionDevelopmentPath` / `--extensionTestsPath`; `test/hover.cjs` exercises the hover UI. Use `JIS_RUN` and `JIS_CDP` for an isolated test directory and local debugging port, and close that test window afterward.
 
-
-## 项目目录
-
-- `src/`：扩展命令、缩放逻辑与 Notebook 渲染器
-- `test/`：单元、扩展宿主与界面测试；`results/` 保存历史测试结果
-- `examples/`：可直接打开的示例 Notebook
-- `docs/`：测试记录与效果截图
-- `releases/`：可安装的 VSIX
-- `archive/`：本地保留的原始交付压缩包与重复说明，不提交 Git
-- `dist/`、`node_modules/`：构建产物与依赖，不提交 Git
-
-源码开发：`npm ci`，然后运行 `npm test`、`npm run build`；打包使用 `npm run package`。
+[MIT License](https://github.com/CurtisYan/jupyter-image-scaler/blob/main/LICENSE).
