@@ -9,6 +9,32 @@ function resolveCell(arg) {
   return editor.notebook.getCells().find(cell => cell.document.uri.toString() === textUri)
     || editor.notebook.cellAt(editor.selection.start);
 }
+function choosePercent(name, current) {
+  return new Promise(resolve => {
+    const picker = vscode.window.createQuickPick();
+    const subscriptions = [];
+    let done = false;
+    const finish = value => {
+      if (done) return;
+      done = true;
+      for (const subscription of subscriptions) subscription.dispose();
+      picker.dispose();
+      resolve(value);
+    };
+    picker.title = `附件图片缩放 · ${name}`;
+    picker.placeholder = '选择比例；若图片未变化，请先运行「开发人员：重新加载窗口」';
+    picker.items = PRESETS.map(value => ({
+      label: `${value}%`,
+      description: value === 100 ? '恢复默认大小' : '相对于默认显示宽度',
+      detail: value === current ? '当前比例' : undefined,
+      value
+    }));
+    subscriptions.push(picker.onDidAccept(() => finish(picker.selectedItems[0]?.value)));
+    subscriptions.push(picker.onDidHide(() => finish(undefined)));
+    picker.show();
+    picker.activeItems = picker.items.filter(item => item.value === current);
+  });
+}
 async function scale(arg, preset, explicitName) {
   const cell = resolveCell(arg);
   if (!cell || cell.notebook.notebookType !== 'jupyter-notebook' || cell.kind !== vscode.NotebookCellKind.Markup) {
@@ -28,7 +54,7 @@ async function scale(arg, preset, explicitName) {
   let percent = preset;
   if (!percent) {
     const current = cell.metadata.metadata?.jupyterImageScaler?.[name]?.percent || 100;
-    percent = (await vscode.window.showQuickPick(PRESETS.map(value => ({label: `${value}%`, description: value === 100 ? '恢复默认大小' : '相对于原图宽度', detail: value === current ? '当前比例' : undefined, value})), {title: `附件图片缩放 · ${name}`, placeHolder: '选择比例，无需输入像素' }))?.value;
+    percent = await choosePercent(name, current);
   }
   if (!percent) return false;
   // A picker can stay open while another editor modifies or deletes the cell.
@@ -57,7 +83,7 @@ function activate(context) {
       return PRESETS.map(percent => {
         const item = new vscode.NotebookCellStatusBarItem(`${percent}%`, vscode.NotebookCellStatusBarAlignment.Left);
         item.command = {command: `jupyterImageScaler.scale${percent}`, title: '附件图片缩放', arguments: [cell]};
-        item.tooltip = percent === 100 ? '恢复原图默认显示大小' : `显示为原图宽度的 ${percent}%，保留原始图片`;
+        item.tooltip = percent === 100 ? '恢复原图默认显示大小' : `显示为默认显示宽度的 ${percent}%，保留原始图片`;
         item.priority = 100 - percent;
         return item;
       });

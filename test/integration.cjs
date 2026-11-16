@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
-const out = path.join(root, 'test/run');
+const out = process.env.JIS_RUN || path.join(root, 'test/run');
 const pause = ms => new Promise(r => setTimeout(r, ms));
 exports.run = async () => {
   fs.mkdirSync(out, {recursive: true});
@@ -12,7 +12,11 @@ exports.run = async () => {
   try {
     await vscode.extensions.getExtension('local-notebook-tools.jupyter-image-scaler').activate();
     const file = path.join(out, 'integration.ipynb');
-    fs.copyFileSync(path.join(__dirname, 'sample.ipynb'), file);
+    const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, 'sample.ipynb')));
+    const largeCell = JSON.parse(fs.readFileSync(path.join(__dirname, 'large-image.ipynb'))).cells[0];
+    fixture.cells[0].attachments['large.png'] = largeCell.attachments['large.png'];
+    fixture.cells[0].source.push('\n\n![large](attachment:large.png)');
+    fs.writeFileSync(file, JSON.stringify(fixture));
     let notebook = await vscode.workspace.openNotebookDocument(vscode.Uri.file(file));
     await vscode.window.showNotebookDocument(notebook);
     let cell = notebook.cellAt(0);
@@ -52,10 +56,12 @@ exports.run = async () => {
     cell = notebook.cellAt(0);
     assert.equal(cell.metadata.metadata.jupyterImageScaler['image.png'].percent, 50);
     check('Close / reopen retains independent 50% and 75% presets');
+    await vscode.commands.executeCommand('notebook.cell.quitEdit');
     fs.writeFileSync(path.join(out, 'ready.json'), JSON.stringify(result, null, 2));
     // The browser test inspects actual Notebook image dimensions, clicks status
     // controls and checks the image chooser. It releases this runner afterward.
-    for (let n=0;n<600;n++) { if (fs.existsSync(path.join(out,'release'))) break; await pause(500); }
+    for (let n=0;n<1200;n++) { if (fs.existsSync(path.join(out,'release'))) break; await pause(500); }
+    assert.ok(fs.existsSync(path.join(out, 'release')), 'Browser tests did not complete');
     result.ok = true;
     fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify(result, null, 2));
   } catch(error) {

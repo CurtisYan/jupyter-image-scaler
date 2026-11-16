@@ -62,7 +62,10 @@ for (const order of ['before', 'after']) test(`renderer survives attachment hook
     assert.ok(html.includes('src="data:image/png;base64,'));
     assert.ok(!html.includes('src="attachment:'));
     if (percent === 100) assert.ok(!html.includes('width='));
-    else assert.ok(html.includes(`width="${percent * 8}"`));
+    else {
+      assert.ok(html.includes(`width="${percent * 8}"`));
+      assert.ok(html.includes(`width: min(${percent * 8}px, ${percent}%)`));
+    }
   }
 });
 test('renderer ignores malformed scale metadata and preserves default rendering', async () => {

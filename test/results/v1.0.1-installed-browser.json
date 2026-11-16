@@ -1,0 +1,51 @@
+{
+  "ok": true,
+  "checks": [
+    "Restored independent 50% and 75% metadata renders at actual expected widths",
+    "Preview command 25% refreshes without edit-mode toggling; picker starts at current preset",
+    "Preview command 50% refreshes without edit-mode toggling; picker starts at current preset",
+    "Preview command 75% refreshes without edit-mode toggling; picker starts at current preset",
+    "Preview command 100% refreshes without edit-mode toggling; picker starts at current preset",
+    "Cancelling the percentage picker preserves width",
+    "6400px image 25% uses default visible width",
+    "6400px image 50% uses default visible width",
+    "6400px image 75% uses default visible width",
+    "6400px image 100% uses default visible width",
+    "100% reset is highlighted as the current preset"
+  ],
+  "actual": [
+    {
+      "natural": 800,
+      "width": 794,
+      "height": 397
+    },
+    {
+      "natural": 400,
+      "width": 300,
+      "height": 150
+    },
+    {
+      "natural": 6400,
+      "width": 794,
+      "height": 99.25
+    }
+  ],
+  "largeActual": [
+    {
+      "percent": 25,
+      "width": 198.5
+    },
+    {
+      "percent": 50,
+      "width": 397
+    },
+    {
+      "percent": 75,
+      "width": 595.5
+    },
+    {
+      "percent": 100,
+      "width": 794
+    }
+  ]
+}

@@ -5,3 +5,9 @@ work/**
 build.cjs
 package-lock.json
 *.vsix
+
+archive/**
+releases/**
+docs/**
+examples/**
+.gitignore

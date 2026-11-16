@@ -2,7 +2,7 @@
   "name": "jupyter-image-scaler",
   "displayName": "Jupyter Image Scaler · 附件图片缩放",
   "description": "在 Notebook Markdown 单元格中用 25%、50%、75% 预设无损缩放内嵌附件图片。",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "local-notebook-tools",
   "license": "MIT",
   "engines": {
@@ -94,5 +94,9 @@
     "esbuild": "0.28.2",
     "@vscode/vsce": "4.1.1",
     "playwright": "1.65.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CurtisYan/jupyter-image-scaler.git"
   }
 }

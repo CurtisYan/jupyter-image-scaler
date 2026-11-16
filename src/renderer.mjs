@@ -13,7 +13,7 @@ export function extend(md) {
           const scale = Object.hasOwn(scales, name) && scales[name];
           if ([25, 50, 75].includes(scale?.percent) && Number.isSafeInteger(scale.width) && scale.width >= 1 && scale.width <= 1000000) {
             token.attrSet('width', String(scale.width));
-            token.attrSet('style', `width: ${scale.width}px; max-width: 100%; height: auto;`);
+            token.attrSet('style', `width: min(${scale.width}px, ${scale.percent}%); max-width: 100%; height: auto;`);
           }
         }
         if (token.children) visit(token.children);
