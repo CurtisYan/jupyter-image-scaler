@@ -33,7 +33,7 @@ test('scales are independent per attachment and reset only selected image', () =
   assert.deepEqual(reset.metadata.jupyterImageScaler, {'second-image.png': {percent: 75, width: 300}});
 });
 test('rejects invalid presets and missing or corrupt attachment data', () => {
-  assert.throws(() => withScale(base, 'image.png', 13));
+  assert.throws(() => withScale(base, 'image.png', 0));
   assert.throws(() => withScale(base, 'missing.png', 50));
   assert.throws(() => withScale({attachments: {bad: {'image/png': '!!!!'}}}, 'bad', 25));
 });
@@ -75,4 +75,17 @@ test('renderer ignores malformed scale metadata and preserves default rendering'
     assert.ok(!md.render('![a](attachment:image.png)', {outputItem:{metadata:{metadata:{jupyterImageScaler:{'image.png':scale}}}}}).includes('width='));
   }
   assert.ok(!md.render('![a](attachment:image.png)').includes('width='));
+});
+
+test('custom percentage and dimensions retain attachments and render safely', async () => {
+  const {extend} = await renderer(); const md = new MarkdownIt(); extend(md);
+  const custom = withScale(base, 'image.png', {percent:60});
+  assert.deepEqual(custom.metadata.jupyterImageScaler['image.png'], {percent:60,width:480});
+  const fixed = withScale(custom, 'image.png', {width:320,height:180});
+  assert.equal(fixed.attachments, base.attachments);
+  assert.deepEqual(fixed.metadata.jupyterImageScaler['image.png'], {mode:'pixels',width:320,height:180});
+  assert.match(md.render('![a](attachment:image.png)', {outputItem:{metadata:fixed}}), /width: 320px; max-width: 100%; height: 180px/);
+  const ratio = withScale(base, 'image.png', {width:320});
+  assert.match(md.render('![a](attachment:image.png)', {outputItem:{metadata:ratio}}), /height: auto/);
+  for (const invalid of [{percent:101},{width:0},{width:12,height:-1},{width:10001},{width:320,percent:50}]) assert.throws(() => withScale(base,'image.png',invalid));
 });

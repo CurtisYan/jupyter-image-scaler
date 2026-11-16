@@ -43,6 +43,16 @@ exports.run = async () => {
     await pause(400);
     assert.equal(cell.metadata.metadata?.jupyterImageScaler?.['second-image.png']?.percent, 75);
     check('Native notebook Undo / Redo restores scale metadata');
+    await vscode.commands.executeCommand('jupyterImageScaler.applyPreset', cell, {width:320,height:180}, 'image.png');
+    assert.deepEqual(cell.metadata.metadata.jupyterImageScaler['image.png'], {width:320,height:180,mode:'pixels'});
+    await notebook.save();
+    assert.deepEqual(JSON.parse(fs.readFileSync(file)).cells[0].metadata.jupyterImageScaler['image.png'], {width:320,height:180,mode:'pixels'});
+    await vscode.commands.executeCommand('undo'); await pause(250);
+    assert.equal(cell.metadata.metadata.jupyterImageScaler['image.png'].percent,25);
+    await vscode.commands.executeCommand('redo'); await pause(250);
+    assert.equal(cell.metadata.metadata.jupyterImageScaler['image.png'].mode,'pixels');
+    assert.equal(JSON.stringify(cell.metadata.attachments),original);
+    check('Custom dimensions save and support Undo / Redo with intact attachment bytes');
     await vscode.commands.executeCommand('jupyterImageScaler.scale50', cell, 'image.png');
     assert.equal(await notebook.save(), true);
     const saved = JSON.parse(fs.readFileSync(file));

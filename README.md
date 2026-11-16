@@ -1,24 +1,35 @@
 # Jupyter Image Scaler · 附件图片缩放
 
-给 VS Code 的 `.ipynb` Markdown 附件图片提供 **25% / 50% / 75% / 100%** 快捷按钮。不需要输入像素，不生成外部图片文件，不压缩原图。
+给 VS Code 的 `.ipynb` Markdown 附件图片提供悬浮缩放菜单：**25% / 50% / 75% / 100%**，支持自定义比例、像素尺寸和快捷档位。保留原始附件，不压缩原图。
 
 > **按钮能打开、选比例却没有变化？** 安装或更新后，请在使用图片的那个 VS Code 窗口运行 `⌘⇧P` → **开发人员：重新加载窗口**。扩展命令可用不代表已经打开的 Notebook 加载了新图片渲染器。先保存文件，再重新加载并选择比例。
 
 ## 操作示例
 
-点击 Markdown 单元格右上角的放大镜选择比例；同一单元格的多张附件图片可以分别缩放。
+运行 Markdown 单元格后，鼠标移到图片上，左上角会出现比例按钮和齿轮。直接点击即可缩放这张图，当前档位会高亮。
 
-![Notebook 附件图片缩放效果，右上角放大镜为比例选择入口](docs/images/实际效果.png)
+![图片悬浮菜单：比例快捷按钮和自定义尺寸档位](docs/images/悬浮菜单.png)
 
 ## 安装和使用
 
-1. 在 VS Code 扩展面板右上角的 `…` 菜单选择 **从 VSIX 安装… / Install from VSIX…**，选择 `releases/jupyter-image-scaler-1.0.1.vsix`。
+1. 在 VS Code 扩展面板右上角的 `…` 菜单选择 **从 VSIX 安装… / Install from VSIX…**，选择 `releases/jupyter-image-scaler-1.1.0.vsix`。
 2. 如果 Notebook 已打开，执行 **Developer: Reload Window（开发人员：重新加载窗口）**，使新渲染器生效。
 3. 打开 `.ipynb`，在 Markdown 单元格粘贴图片，保留原来的 `![image.png](attachment:image.png)` 写法。
-4. 在图片预览状态点击单元格右上角的放大镜，选择图片和比例；也可双击图片进入编辑模式，点击单元格下方的 **25% / 50% / 75% / 100%**；同一单元格中有多张图时，先选择附件名称。
+4. 在图片预览状态把鼠标移到图片上，点击比例按钮；齿轮可设置自定义尺寸或管理快捷档位。编辑模式下，单元格下方也显示相同档位。
 5. 如果使用编辑模式按钮，点击单元格右上角的“停止编辑”查看效果（焦点在文字编辑区时也可按 Esc），再保存 Notebook，比例会随文件保留。100% 移除该附件的缩放设置，恢复默认显示。
 
 在图片预览模式下，可以点击单元格右上角的放大镜按钮，或选中单元格后按 **⌘⌥I**（macOS）或 **Ctrl+Alt+I**（Windows / Linux），选择图片和比例；或打开命令面板搜索 **附件图片缩放**。VS Code 会在 Markdown 编辑模式显示单元格下方按钮；如果编辑时仍未显示，在设置中把 `Notebook: Show Cell Status Bar` 设为 `visible`，或直接使用快捷键。
+
+## 自定义档位和尺寸
+
+点击图片旁的 **⚙**：
+
+- **添加百分比快捷档位**：输入 1–100 的整数，例如 `60`，生成 `60%` 按钮。
+- **自定义尺寸：应用到这张图**：输入 `320` 表示宽 320px、高度等比；输入 `320x180` 指定宽高，可能改变原图比例。应用后可选择同时保存为快捷档位。
+- **添加尺寸快捷档位**：直接保存常用尺寸，之后点击对应按钮即可应用。
+- 可删除档位或恢复默认四档；最多保留 12 档。档位保存在 VS Code 用户设置 `jupyterImageScaler.presets`，所有 Notebook 共用。图片实际尺寸保存在当前 Notebook，独立于快捷按钮。
+
+像素宽度受单元格可用宽度限制。悬浮菜单也支持 Tab 键聚焦显示。没有唯一 ID、内容又完全相同的旧单元格若无法准确定位，会提示使用该单元格右上角的放大镜。
 
 ## 比例和保存方式
 
@@ -62,7 +73,7 @@ npm test
 npm run package
 ```
 
-源码包提供单元测试、真实 VS Code 扩展宿主测试和 Notebook 页面交互测试。`test/integration.cjs` 可通过 VS Code 的 `--extensionDevelopmentPath` / `--extensionTestsPath` 运行；`test/browser.cjs` 通过测试窗口的本机 9338 调试端口检查图片实际宽度与按钮交互。只在单独测试窗口启用该端口，完成后退出窗口。
+源码包提供单元测试、真实 VS Code 扩展宿主测试和 Notebook 页面交互测试。`test/integration.cjs` 可通过 VS Code 的 `--extensionDevelopmentPath` / `--extensionTestsPath` 运行；`test/browser.cjs` 检查旧版命令交互，`test/hover.cjs` 检查悬浮按钮、自定义档位、尺寸和同名图片定位，可通过 `JIS_RUN` 与 `JIS_CDP` 指定独立测试目录及本机调试端口。只在单独测试窗口启用该端口，完成后退出窗口。
 
 许可证：MIT。安装包为本地开发版，未发布到 Marketplace，也未通过 Marketplace 签名。
 

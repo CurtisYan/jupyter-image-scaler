@@ -1,8 +1,8 @@
 {
   "name": "jupyter-image-scaler",
   "displayName": "Jupyter Image Scaler · 附件图片缩放",
-  "description": "在 Notebook Markdown 单元格中用 25%、50%、75% 预设无损缩放内嵌附件图片。",
-  "version": "1.0.1",
+  "description": "Notebook Markdown 附件图片悬浮缩放、自定义比例与尺寸快捷档位。",
+  "version": "1.1.0",
   "publisher": "local-notebook-tools",
   "license": "MIT",
   "engines": {
@@ -16,7 +16,8 @@
     "workspace"
   ],
   "activationEvents": [
-    "onNotebook:jupyter-notebook"
+    "onNotebook:jupyter-notebook",
+    "onRenderer:local-notebook-tools.jupyter-image-scaler-renderer"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
@@ -33,7 +34,7 @@
     "commands": [
       {
         "command": "jupyterImageScaler.choose",
-        "title": "附件图片缩放：选择比例 (25 / 50 / 75 / 100%)",
+        "title": "附件图片缩放：选择档位",
         "category": "Notebook",
         "icon": "$(zoom-in)"
       },
@@ -56,6 +57,17 @@
         "command": "jupyterImageScaler.scale100",
         "title": "附件图片缩放：100%（恢复）",
         "category": "Notebook"
+      },
+      {
+        "command": "jupyterImageScaler.applyPreset",
+        "title": "附件图片缩放：应用快捷档位",
+        "category": "Notebook"
+      },
+      {
+        "command": "jupyterImageScaler.settings",
+        "title": "附件图片缩放：设置快捷档位",
+        "category": "Notebook",
+        "icon": "$(gear)"
       }
     ],
     "keybindings": [
@@ -82,9 +94,67 @@
         "entrypoint": {
           "extends": "vscode.markdown-it-renderer",
           "path": "./dist/renderer.js"
+        },
+        "requiresMessaging": "always"
+      }
+    ],
+    "configuration": {
+      "title": "Jupyter Image Scaler",
+      "properties": {
+        "jupyterImageScaler.presets": {
+          "type": "array",
+          "default": [
+            {
+              "percent": 25
+            },
+            {
+              "percent": 50
+            },
+            {
+              "percent": 75
+            },
+            {
+              "percent": 100
+            }
+          ],
+          "maxItems": 12,
+          "description": "图片旁及编辑状态的快捷档位。百分比相对于默认显示宽度；像素尺寸可只填宽度以保持比例。",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "percent": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "width": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "percent"
+                ]
+              },
+              {
+                "required": [
+                  "width"
+                ]
+              }
+            ]
+          }
         }
       }
-    ]
+    }
   },
   "dependencies": {
     "image-size": "2.1.0",

@@ -22,14 +22,14 @@ const out = process.env.JIS_RUN || 'test/run';
     const width = i => images.nth(i).evaluate(img => img.getBoundingClientRect().width);
     const checks = [];
     const openPicker = async (index, name) => {
-      const toolbar = page.locator('.markdown-cell-row [aria-label^="附件图片缩放：选择比例"]');
+      const toolbar = page.locator('.markdown-cell-row [aria-label^="附件图片缩放：选择档位"]');
       if (await toolbar.count()) await toolbar.first().click();
       else {
         // Some VS Code layouts consolidate cell toolbar commands. Exercise the
         // same public command from the command palette in those layouts.
         await page.keyboard.press('Meta+Shift+p');
-        await page.locator('.quick-input-box input').fill('>附件图片缩放：选择比例');
-        await page.getByRole('option').filter({hasText: '附件图片缩放：选择比例'}).click();
+        await page.locator('.quick-input-box input').fill('>附件图片缩放：选择档位');
+        await page.getByRole('option').filter({hasText: '附件图片缩放：选择档位'}).click();
       }
       if (name) await page.getByRole('option', {name, exact: true}).click();
       await page.locator('.quick-input-list .monaco-list-row.focused').waitFor();

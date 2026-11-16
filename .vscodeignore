@@ -8,6 +8,7 @@ package-lock.json
 
 archive/**
 releases/**
-docs/**
+docs/*.md
+docs/*.txt
 examples/**
 .gitignore

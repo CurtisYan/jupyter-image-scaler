@@ -1,5 +1,5 @@
 const vscode = require('vscode');
-const { PRESETS, referencedImages, withScale } = require('./core.cjs');
+const { PRESETS, referencedImages, withScale, normalizePreset, presetLabel } = require('./core.cjs');
 function resolveCell(arg) {
   if (arg?.cell?.document) return arg.cell;
   if (arg?.document && arg?.notebook) return arg;
@@ -9,31 +9,72 @@ function resolveCell(arg) {
   return editor.notebook.getCells().find(cell => cell.document.uri.toString() === textUri)
     || editor.notebook.cellAt(editor.selection.start);
 }
+function getPresets() {
+  const raw = vscode.workspace.getConfiguration('jupyterImageScaler').get('presets', PRESETS.map(percent => ({percent})));
+  const values = [];
+  for (const value of Array.isArray(raw) ? raw.slice(0,12) : []) {
+    try { const preset = normalizePreset(value); if (!values.some(p => JSON.stringify(p) === JSON.stringify(preset))) values.push(preset); } catch { /* ignore invalid settings */ }
+  }
+  return values.length ? values : PRESETS.map(percent => ({percent}));
+}
+function currentPreset(cell, name) {
+  const value = cell.metadata.metadata?.jupyterImageScaler?.[name];
+  return value?.mode === 'pixels' ? {width:value.width, ...(value.height ? {height:value.height} : {})} : {percent:value?.percent || 100};
+}
 function choosePercent(name, current) {
   return new Promise(resolve => {
     const picker = vscode.window.createQuickPick();
-    const subscriptions = [];
     let done = false;
-    const finish = value => {
-      if (done) return;
-      done = true;
-      for (const subscription of subscriptions) subscription.dispose();
-      picker.dispose();
-      resolve(value);
-    };
+    const subscriptions = [];
+    const finish = value => { if (done) return; done = true; subscriptions.forEach(s => s.dispose()); picker.dispose(); resolve(value); };
     picker.title = `附件图片缩放 · ${name}`;
-    picker.placeholder = '选择比例；若图片未变化，请先运行「开发人员：重新加载窗口」';
-    picker.items = PRESETS.map(value => ({
-      label: `${value}%`,
-      description: value === 100 ? '恢复默认大小' : '相对于默认显示宽度',
-      detail: value === current ? '当前比例' : undefined,
-      value
-    }));
-    subscriptions.push(picker.onDidAccept(() => finish(picker.selectedItems[0]?.value)));
-    subscriptions.push(picker.onDidHide(() => finish(undefined)));
-    picker.show();
-    picker.activeItems = picker.items.filter(item => item.value === current);
+    picker.placeholder = '选择快捷档位';
+    picker.items = getPresets().map(value => ({label:presetLabel(value), value, detail:JSON.stringify(value) === JSON.stringify(current) ? '当前档位' : undefined}));
+    subscriptions.push(picker.onDidAccept(() => finish(picker.selectedItems[0]?.value)), picker.onDidHide(() => finish()));
+    picker.show(); picker.activeItems = picker.items.filter(item => item.detail);
   });
+}
+async function inputPreset(pixels) {
+  const text = await vscode.window.showInputBox({title:pixels ? '自定义图片尺寸' : '自定义缩放比例', prompt:pixels ? '输入宽度（如 320），或宽 × 高（如 320x180）。只填宽度保持比例；填写宽高会按指定比例显示。' : '输入 1–100 的整数百分比', placeHolder:pixels ? '320 或 320x180' : '60', validateInput:text => {try { parsePreset(text, pixels); } catch(e) { return e.message; }}});
+  return text === undefined ? undefined : parsePreset(text, pixels);
+}
+function parsePreset(text, pixels) {
+  if (!pixels && /^\d+%?$/.test(text.trim())) return normalizePreset({percent:Number(text.trim().replace('%',''))});
+  const match = /^(\d+)(?:\s*[x×*]\s*(\d+))?$/.exec(text.trim());
+  if (pixels && match) return normalizePreset({width:Number(match[1]), ...(match[2] ? {height:Number(match[2])} : {})});
+  throw new Error(pixels ? '请输入整数宽度或 宽x高。' : '请输入 1–100 的整数。');
+}
+async function savePresets(presets) {
+  await vscode.workspace.getConfiguration('jupyterImageScaler').update('presets', presets, vscode.ConfigurationTarget.Global);
+}
+async function settings(cell, name) {
+  const action = await vscode.window.showQuickPick([
+    {label:'自定义尺寸：应用到这张图', action:'apply'},
+    {label:'添加百分比快捷档位', action:'percent'},
+    {label:'添加尺寸快捷档位', action:'pixels'},
+    {label:'删除快捷档位', action:'remove'},
+    {label:'恢复默认四个档位', action:'reset'}
+  ], {title:'图片缩放设置', placeHolder:'快捷档位在所有 Notebook 中共用'});
+  if (!action) return;
+  if (action.action === 'reset') return savePresets(PRESETS.map(percent => ({percent})));
+  if (action.action === 'remove') {
+    const presets = getPresets();
+    const item = await vscode.window.showQuickPick(presets.map((p,index) => ({label:presetLabel(p),index})), {title:'删除快捷档位'});
+    if (!item) return;
+    if (presets.length === 1) return vscode.window.showInformationMessage('至少保留一个快捷档位。');
+    return savePresets(presets.filter((_,i) => i !== item.index));
+  }
+  const preset = await inputPreset(action.action !== 'percent');
+  if (!preset) return;
+  if (action.action === 'apply') {
+    if (!await scale(cell, preset, name)) return;
+    const choice = await vscode.window.showQuickPick([{label:'同时保存为快捷档位', save:true}, {label:'仅应用这一次',save:false}], {title:`已应用 ${presetLabel(preset)}`});
+    if (!choice?.save) return;
+  }
+  const presets = getPresets();
+  if (presets.some(p => JSON.stringify(p) === JSON.stringify(preset))) return;
+  if (presets.length >= 12) return vscode.window.showInformationMessage('最多保留 12 个快捷档位，请先删除一个。');
+  await savePresets([...presets, preset]);
 }
 async function scale(arg, preset, explicitName) {
   const cell = resolveCell(arg);
@@ -53,7 +94,7 @@ async function scale(arg, preset, explicitName) {
   if (!name) return false;
   let percent = preset;
   if (!percent) {
-    const current = cell.metadata.metadata?.jupyterImageScaler?.[name]?.percent || 100;
+    const current = currentPreset(cell, name);
     percent = await choosePercent(name, current);
   }
   if (!percent) return false;
@@ -67,7 +108,7 @@ async function scale(arg, preset, explicitName) {
   edit.set(cell.notebook.uri, [vscode.NotebookEdit.updateCellMetadata(cell.index, metadata)]);
   const applied = await vscode.workspace.applyEdit(edit);
   if (!applied) throw new Error('Notebook 无法应用修改，请检查文件是否可编辑。');
-  vscode.window.setStatusBarMessage(`附件图片 ${name}：${percent}%（原图保持完整，保存 Notebook 后保留比例）`, 4500);
+  vscode.window.setStatusBarMessage(`附件图片 ${name}：${presetLabel(normalizePreset(percent))}（原图保持完整，保存 Notebook 后保留比例）`, 4500);
   return true;
 }
 function activate(context) {
@@ -77,17 +118,37 @@ function activate(context) {
   });
   context.subscriptions.push(vscode.commands.registerCommand('jupyterImageScaler.choose', arg => run(arg)));
   for (const preset of PRESETS) context.subscriptions.push(vscode.commands.registerCommand(`jupyterImageScaler.scale${preset}`, (arg, name) => run(arg, preset, name)));
-  context.subscriptions.push(vscode.notebooks.registerNotebookCellStatusBarItemProvider('jupyter-notebook', {
-    provideCellStatusBarItems(cell) {
-      if (cell.kind !== vscode.NotebookCellKind.Markup || !referencedImages(cell.document.getText()).length) return [];
-      return PRESETS.map(percent => {
-        const item = new vscode.NotebookCellStatusBarItem(`${percent}%`, vscode.NotebookCellStatusBarAlignment.Left);
-        item.command = {command: `jupyterImageScaler.scale${percent}`, title: '附件图片缩放', arguments: [cell]};
-        item.tooltip = percent === 100 ? '恢复原图默认显示大小' : `显示为默认显示宽度的 ${percent}%，保留原始图片`;
-        item.priority = 100 - percent;
-        return item;
-      });
-    }
-  }));
+  const changes = new vscode.EventEmitter();
+  const messaging = vscode.notebooks.createRendererMessaging('local-notebook-tools.jupyter-image-scaler-renderer');
+  const sendPresets = editor => messaging.postMessage({type:'presets', presets:getPresets()}, editor);
+  context.subscriptions.push(changes,
+    vscode.commands.registerCommand('jupyterImageScaler.applyPreset', (cell, preset, name) => run(cell, preset, name)),
+    vscode.commands.registerCommand('jupyterImageScaler.settings', (cell, name) => settings(resolveCell(cell), name).catch(error => vscode.window.showErrorMessage(error.message))),
+    vscode.workspace.onDidChangeConfiguration(event => { if (event.affectsConfiguration('jupyterImageScaler.presets')) { changes.fire(); sendPresets(); } }),
+    messaging.onDidReceiveMessage(async ({editor, message}) => {
+      try {
+        if (message?.type === 'ready') { await sendPresets(editor); return; }
+        if (!['apply','settings'].includes(message?.type) || typeof message.source !== 'string' || typeof message.name !== 'string') return;
+        const cells = editor.notebook.getCells().filter(cell => cell.kind === vscode.NotebookCellKind.Markup && cell.document.getText() === message.source && referencedImages(message.source).includes(message.name) && Object.hasOwn(cell.metadata.attachments || {}, message.name));
+        const exact = typeof message.cellId === 'string' ? cells.filter(cell => cell.metadata.id === message.cellId) : [];
+        const cell = exact.length === 1 ? exact[0] : cells.length === 1 ? cells[0] : undefined;
+        if (!cell) { vscode.window.showWarningMessage('无法准确定位这张图片，请使用该单元格右上角的缩放菜单。'); return; }
+        if (message.type === 'apply') await run(cell, normalizePreset(message.preset), message.name);
+        else await settings(cell, message.name);
+      } catch(error) { vscode.window.showErrorMessage(`图片缩放失败：${error.message}`); }
+    }),
+    vscode.notebooks.registerNotebookCellStatusBarItemProvider('jupyter-notebook', {
+      onDidChangeCellStatusBarItems: changes.event,
+      provideCellStatusBarItems(cell) {
+        if (cell.kind !== vscode.NotebookCellKind.Markup || !referencedImages(cell.document.getText()).length) return [];
+        return [...getPresets(), null].map((preset, index) => {
+          const item = new vscode.NotebookCellStatusBarItem(preset ? presetLabel(preset) : '$(gear)', vscode.NotebookCellStatusBarAlignment.Left);
+          item.command = {command:preset ? 'jupyterImageScaler.applyPreset' : 'jupyterImageScaler.settings', title:'附件图片缩放', arguments:[cell, ...(preset ? [preset] : [])]};
+          item.tooltip = preset ? `图片缩放 ${presetLabel(preset)}` : '设置快捷档位和自定义尺寸';
+          item.priority = 100 - index;
+          return item;
+        });
+      }
+    }));
 }
 module.exports = { activate };

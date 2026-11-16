@@ -31,15 +31,24 @@ function dimensions(bundle) {
   if (!Number.isFinite(result.width) || result.width < 1) throw new Error('无法读取图片宽度。');
   return result;
 }
-function withScale(metadata, name, percent) {
-  if (!PRESETS.includes(percent)) throw new Error('请选择 25%、50%、75% 或 100%。');
+function normalizePreset(value) {
+  if (typeof value === 'number') value = {percent: value};
+  if (!value || typeof value !== 'object') throw new Error('缩放档位无效。');
+  if (Number.isInteger(value.percent) && value.percent >= 1 && value.percent <= 100 && value.width === undefined && value.height === undefined) return {percent: value.percent};
+  if (value.percent === undefined && Number.isInteger(value.width) && value.width >= 1 && value.width <= 10000 && (value.height === undefined || (Number.isInteger(value.height) && value.height >= 1 && value.height <= 10000))) return value.height === undefined ? {width: value.width} : {width: value.width, height: value.height};
+  throw new Error('比例应为 1–100 的整数，尺寸应为 1–10000 的整数像素。');
+}
+function presetLabel(value) { return value.percent ? `${value.percent}%` : value.height ? `${value.width} × ${value.height}` : `${value.width}px`; }
+function withScale(metadata, name, preset) {
+  const value = normalizePreset(preset);
+  const percent = value.percent;
   const size = dimensions(metadata.attachments?.[name]);
   const inner = { ...(metadata.metadata || {}) };
   const entries = { ...(inner.jupyterImageScaler || {}) };
   if (percent === 100) delete entries[name];
-  else Object.defineProperty(entries, name, {value: {percent, width: Math.max(1, Math.round(size.width * percent / 100))}, enumerable: true, configurable: true, writable: true});
+  else Object.defineProperty(entries, name, {value: percent ? {percent, width: Math.max(1, Math.round(size.width * percent / 100))} : {...value, mode: 'pixels'}, enumerable: true, configurable: true, writable: true});
   if (Object.keys(entries).length) inner.jupyterImageScaler = entries;
   else delete inner.jupyterImageScaler;
   return { ...metadata, metadata: inner };
 }
-module.exports = { PRESETS, decodeName, walk, referencedImages, dimensions, withScale };
+module.exports = { PRESETS, decodeName, walk, referencedImages, dimensions, withScale, normalizePreset, presetLabel };
