@@ -2,7 +2,7 @@
   "name": "jupyter-image-scaler",
   "displayName": "Jupyter Image Scaler · 附件图片缩放",
   "description": "Notebook Markdown 附件图片悬浮缩放、自定义比例与尺寸快捷档位。",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "publisher": "local-notebook-tools",
   "license": "MIT",
   "engines": {
@@ -152,6 +152,19 @@
               }
             ]
           }
+        },
+        "jupyterImageScaler.toolbarStyle": {
+          "type": "string",
+          "enum": [
+            "overlay",
+            "outside"
+          ],
+          "enumDescriptions": [
+            "紧凑菜单显示在图片左上角，悬浮时出现。",
+            "菜单自动选择图片左侧、右侧或下方的空位，不遮挡图片。"
+          ],
+          "default": "overlay",
+          "description": "图片快捷档位菜单的显示样式，可从图片齿轮菜单切换。"
         }
       }
     }

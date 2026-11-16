@@ -1,0 +1,39 @@
+{
+  "ok": true,
+  "checks": [
+    "Hover buttons change only the target image and highlight current preset without entering edit mode",
+    "Large image 25/50/75/100% have distinct widths relative to default visible width",
+    "Custom 60% shortcut appears on every image and applies correctly",
+    "Custom 320x180 applies from gear, saves as shortcut and can be reapplied",
+    "Width-only custom size keeps original aspect ratio",
+    "Invalid dimensions are rejected and cancelling preserves current image",
+    "Deleting a preset refreshes visible toolbars",
+    "Saved Notebook retains custom dimensions and exact original attachment bytes",
+    "Reordering a custom preset updates all image toolbars immediately",
+    "Compact toolbar is at most 30px tall with a larger 18px gear icon",
+    "Side style places buttons entirely outside the image without changing image width",
+    "Full-width images move the menu below with reserved space and no image overlap",
+    "Right-aligned images automatically place the external toolbar in the free space on the left",
+    "Window resizing keeps the toolbar outside the image without ResizeObserver errors",
+    "Switching back restores the compact overlay immediately",
+    "Identical Markdown and attachment names in two cells route to the hovered cell"
+  ],
+  "largeActual": [
+    {
+      "percent": 25,
+      "width": 198.5
+    },
+    {
+      "percent": 50,
+      "width": 397
+    },
+    {
+      "percent": 75,
+      "width": 595.5
+    },
+    {
+      "percent": 100,
+      "width": 794
+    }
+  ]
+}

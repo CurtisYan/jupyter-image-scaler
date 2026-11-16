@@ -47,15 +47,51 @@ function parsePreset(text, pixels) {
 async function savePresets(presets) {
   await vscode.workspace.getConfiguration('jupyterImageScaler').update('presets', presets, vscode.ConfigurationTarget.Global);
 }
+function getToolbarStyle() {
+  return vscode.workspace.getConfiguration('jupyterImageScaler').get('toolbarStyle') === 'outside' ? 'outside' : 'overlay';
+}
+async function sortPresets() {
+  while (true) {
+    const presets = getPresets();
+    const selected = await vscode.window.showQuickPick([
+      ...presets.map((preset,index) => ({label:`${index + 1}. ${presetLabel(preset)}`, index})),
+      {label:'完成排序'}
+    ], {title:'快捷档位排序', placeHolder:'选择一个档位调整位置；每次调整立即保存'});
+    if (selected?.index === undefined) return;
+    const index = selected.index;
+    const actions = [];
+    if (index > 0) actions.push({label:'上移一位', target:index-1}, {label:'移到最前', target:0});
+    if (index < presets.length-1) actions.push({label:'下移一位', target:index+1}, {label:'移到最后', target:presets.length-1});
+    if (!actions.length) { vscode.window.showInformationMessage('添加更多档位后即可排序。'); return; }
+    const action = await vscode.window.showQuickPick(actions, {title:`移动 ${presetLabel(presets[index])}`});
+    if (!action) return;
+    if (JSON.stringify(getPresets()) !== JSON.stringify(presets)) { vscode.window.showInformationMessage('档位设置已发生变化，请重新选择。'); continue; }
+    const [preset] = presets.splice(index,1);
+    presets.splice(action.target,0,preset);
+    await savePresets(presets);
+  }
+}
+async function chooseToolbarStyle() {
+  const current = getToolbarStyle();
+  const item = await vscode.window.showQuickPick([
+    {label:'左上角悬浮', value:'overlay', description:current === 'overlay' ? '当前样式' : undefined, detail:'紧凑菜单显示在图片左上角'},
+    {label:'图片外部（自动避让）', value:'outside', description:current === 'outside' ? '当前样式' : undefined, detail:'自动选择图片左侧、右侧或下方的空位；保持原有图片大小'}
+  ], {title:'切换菜单样式'});
+  if (item) await vscode.workspace.getConfiguration('jupyterImageScaler').update('toolbarStyle',item.value,vscode.ConfigurationTarget.Global);
+}
 async function settings(cell, name) {
   const action = await vscode.window.showQuickPick([
     {label:'自定义尺寸：应用到这张图', action:'apply'},
     {label:'添加百分比快捷档位', action:'percent'},
     {label:'添加尺寸快捷档位', action:'pixels'},
+    {label:'调整档位顺序', action:'sort'},
+    {label:'切换菜单样式', action:'style'},
     {label:'删除快捷档位', action:'remove'},
     {label:'恢复默认四个档位', action:'reset'}
   ], {title:'图片缩放设置', placeHolder:'快捷档位在所有 Notebook 中共用'});
   if (!action) return;
+  if (action.action === 'sort') return sortPresets();
+  if (action.action === 'style') return chooseToolbarStyle();
   if (action.action === 'reset') return savePresets(PRESETS.map(percent => ({percent})));
   if (action.action === 'remove') {
     const presets = getPresets();
@@ -120,11 +156,11 @@ function activate(context) {
   for (const preset of PRESETS) context.subscriptions.push(vscode.commands.registerCommand(`jupyterImageScaler.scale${preset}`, (arg, name) => run(arg, preset, name)));
   const changes = new vscode.EventEmitter();
   const messaging = vscode.notebooks.createRendererMessaging('local-notebook-tools.jupyter-image-scaler-renderer');
-  const sendPresets = editor => messaging.postMessage({type:'presets', presets:getPresets()}, editor);
+  const sendPresets = editor => messaging.postMessage({type:'presets', presets:getPresets(), toolbarStyle:getToolbarStyle()}, editor);
   context.subscriptions.push(changes,
     vscode.commands.registerCommand('jupyterImageScaler.applyPreset', (cell, preset, name) => run(cell, preset, name)),
     vscode.commands.registerCommand('jupyterImageScaler.settings', (cell, name) => settings(resolveCell(cell), name).catch(error => vscode.window.showErrorMessage(error.message))),
-    vscode.workspace.onDidChangeConfiguration(event => { if (event.affectsConfiguration('jupyterImageScaler.presets')) { changes.fire(); sendPresets(); } }),
+    vscode.workspace.onDidChangeConfiguration(event => { if (event.affectsConfiguration('jupyterImageScaler')) { changes.fire(); sendPresets(); } }),
     messaging.onDidReceiveMessage(async ({editor, message}) => {
       try {
         if (message?.type === 'ready') { await sendPresets(editor); return; }
