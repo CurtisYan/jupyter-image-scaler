@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "checks": [
+    "Actual Notebook webview renders 50% / 75% with preserved aspect ratio",
+    "Clicked 25% status button, selected attachment; preview refreshed, second image unchanged",
+    "Clicked 50% status button, selected attachment; preview refreshed, second image unchanged",
+    "Clicked 75% status button, selected attachment; preview refreshed, second image unchanged",
+    "Clicked 100% status button, selected attachment; preview refreshed, second image unchanged",
+    "macOS shortcut opens image chooser then percentage picker",
+    "Cancelling image chooser leaves size unchanged"
+  ],
+  "actual": [
+    {
+      "natural": 800,
+      "width": 400,
+      "height": 200
+    },
+    {
+      "natural": 400,
+      "width": 300,
+      "height": 150
+    }
+  ]
+}

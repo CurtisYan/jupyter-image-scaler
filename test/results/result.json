@@ -1,0 +1,14 @@
+{
+  "checks": [
+    "Built-in ipynb serializer exposes attachments",
+    "Command 25% preserves original attachment bytes",
+    "Command 50% preserves original attachment bytes",
+    "Command 75% preserves original attachment bytes",
+    "Command 100% preserves original attachment bytes",
+    "Native notebook Undo / Redo restores scale metadata",
+    "Save stores custom metadata and intact attachments in nbformat",
+    "Close / reopen retains independent 50% and 75% presets"
+  ],
+  "version": "1.145.2",
+  "ok": true
+}

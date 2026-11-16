@@ -1,0 +1,42 @@
+测试日期：2026-11-16
+环境：macOS，VS Code 1.145.2
+
+单元测试：7 项通过。
+真实扩展宿主：8 项通过。
+真实 Notebook 页面交互：7 项通过。
+VSIX：VS Code CLI 在独立目录中安装成功；安装后的 VSIX 也通过了同一组 7 项真实页面交互测试（包括等待菜单出现后再取消）。
+
+扩展宿主检查：
+- Built-in ipynb serializer exposes attachments
+- Command 25% preserves original attachment bytes
+- Command 50% preserves original attachment bytes
+- Command 75% preserves original attachment bytes
+- Command 100% preserves original attachment bytes
+- Native notebook Undo / Redo restores scale metadata
+- Save stores custom metadata and intact attachments in nbformat
+- Close / reopen retains independent 50% and 75% presets
+
+界面检查：
+- Actual Notebook webview renders 50% / 75% with preserved aspect ratio
+- Clicked 25% status button, selected attachment; preview refreshed, second image unchanged
+- Clicked 50% status button, selected attachment; preview refreshed, second image unchanged
+- Clicked 75% status button, selected attachment; preview refreshed, second image unchanged
+- Clicked 100% status button, selected attachment; preview refreshed, second image unchanged
+- macOS shortcut opens image chooser then percentage picker
+- Cancelling image chooser leaves size unchanged
+
+最终测量：
+[
+  {
+    "natural": 800,
+    "width": 400,
+    "height": 200
+  },
+  {
+    "natural": 400,
+    "width": 300,
+    "height": 150
+  }
+]
+
+限制：只在以上真实环境运行；未验证 Windows / Linux 及最低声明版本1.100。其他编辑器可显示内嵌原图，但可能忽略自定义显示比例。

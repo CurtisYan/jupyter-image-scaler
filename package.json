@@ -1,0 +1,98 @@
+{
+  "name": "jupyter-image-scaler",
+  "displayName": "Jupyter Image Scaler · 附件图片缩放",
+  "description": "在 Notebook Markdown 单元格中用 25%、50%、75% 预设无损缩放内嵌附件图片。",
+  "version": "1.0.0",
+  "publisher": "local-notebook-tools",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Notebooks"
+  ],
+  "main": "./dist/extension.cjs",
+  "extensionKind": [
+    "workspace"
+  ],
+  "activationEvents": [
+    "onNotebook:jupyter-notebook"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": true
+  },
+  "scripts": {
+    "build": "node build.cjs",
+    "test": "node --test test/unit.cjs",
+    "package": "npm run build && vsce package --no-dependencies --allow-missing-repository --no-rewrite-relative-links"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "jupyterImageScaler.choose",
+        "title": "附件图片缩放：选择比例 (25 / 50 / 75 / 100%)",
+        "category": "Notebook",
+        "icon": "$(zoom-in)"
+      },
+      {
+        "command": "jupyterImageScaler.scale25",
+        "title": "附件图片缩放：25%",
+        "category": "Notebook"
+      },
+      {
+        "command": "jupyterImageScaler.scale50",
+        "title": "附件图片缩放：50%",
+        "category": "Notebook"
+      },
+      {
+        "command": "jupyterImageScaler.scale75",
+        "title": "附件图片缩放：75%",
+        "category": "Notebook"
+      },
+      {
+        "command": "jupyterImageScaler.scale100",
+        "title": "附件图片缩放：100%（恢复）",
+        "category": "Notebook"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "jupyterImageScaler.choose",
+        "key": "ctrl+alt+i",
+        "mac": "cmd+alt+i",
+        "when": "notebookEditorFocused && notebookType == 'jupyter-notebook' && notebookCellType == 'markup'"
+      }
+    ],
+    "menus": {
+      "notebook/cell/title": [
+        {
+          "command": "jupyterImageScaler.choose",
+          "when": "notebookType == 'jupyter-notebook' && notebookCellType == 'markup'",
+          "group": "inline@20"
+        }
+      ]
+    },
+    "notebookRenderer": [
+      {
+        "id": "local-notebook-tools.jupyter-image-scaler-renderer",
+        "displayName": "Notebook attachment image scale",
+        "entrypoint": {
+          "extends": "vscode.markdown-it-renderer",
+          "path": "./dist/renderer.js"
+        }
+      }
+    ]
+  },
+  "dependencies": {
+    "image-size": "2.1.0",
+    "markdown-it": "15.0.3"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "@vscode/vsce": "4.1.1",
+    "playwright": "1.65.1"
+  }
+}
