@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "All four presets apply through VS Code commands: local file",
+    "All four presets apply through VS Code commands: hosted URL",
+    "Native Undo / Redo independently restores source-image scale",
+    "Save retains pixel sizes, unrelated metadata, original image file, and source references",
+    "Close / reopen retains local and hosted image sizes"
+  ],
+  "version": "1.146.0",
+  "ok": true
+}

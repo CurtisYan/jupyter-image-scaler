@@ -89,3 +89,40 @@ test('custom percentage and dimensions retain attachments and render safely', as
   assert.match(md.render('![a](attachment:image.png)', {outputItem:{metadata:ratio}}), /height: auto/);
   for (const invalid of [{percent:101},{width:0},{width:12,height:-1},{width:10001},{width:320,percent:50}]) assert.throws(() => withScale(base,'image.png',invalid));
 });
+
+
+test('image references include local paths, hosted URLs and attachments without parsing code as images', () => {
+  const {imageReferences} = require('../src/core.cjs');
+  const refs = imageReferences('![local](image.png) ![again](image.png) ![space](<my image.png>) ![web](https://example.org/image.png?a=1&b=2) ![a](attachment:image.png)\n![ref][pic]\n\n[pic]: ../assets/test.png\n\n`![skip](fake.png)`\n\n```md\n![skip](other.png)\n```');
+  assert.deepEqual(refs.map(r => r.id), ['image.png','my%20image.png','https://example.org/image.png?a=1&b=2','attachment:image.png','../assets/test.png']);
+});
+test('local and hosted scales need no attachment bytes and use independent metadata namespaces', () => {
+  const {imageReferences, withImageScale} = require('../src/core.cjs');
+  const [local, remote, attachment] = imageReferences('![l](image.png) ![w](https://example.org/image.png) ![a](attachment:image.png)');
+  const before = JSON.stringify(base);
+  let value = withImageScale(base, local, 25);
+  value = withImageScale(value, remote, {width:320,height:180});
+  value = withImageScale(value, attachment, 50);
+  assert.deepEqual(value.metadata.jupyterImageScalerSources, {'image.png':{percent:25},'https://example.org/image.png':{width:320,height:180,mode:'pixels'}});
+  assert.deepEqual(value.metadata.jupyterImageScaler['image.png'], {percent:50,width:400});
+  value = withImageScale(value, local, 100);
+  assert.equal(value.metadata.jupyterImageScalerSources['image.png'], undefined);
+  value = withImageScale(value, remote, 100);
+  assert.equal(value.metadata.jupyterImageScalerSources, undefined);
+  assert.equal(JSON.stringify(base), before);
+  assert.equal(value.attachments, base.attachments);
+  assert.deepEqual(withImageScale({}, local, 50), {metadata:{jupyterImageScalerSources:{'image.png':{percent:50}}}});
+});
+test('renderer marks ordinary images, preserves URLs and validates source sizes', async () => {
+  const {extend, sourceWidth} = await renderer(); const md = new MarkdownIt(); extend(md);
+  const env = {outputItem:{id:'source-cell',metadata:{id:'cell-id',metadata:{jupyterImageScalerSources:{'image.png':{percent:50},'https://example.org/a.png':{width:320,height:180,mode:'pixels'}}}}}};
+  const html = md.render('![local](image.png) ![web](https://example.org/a.png)', env);
+  assert.match(html,/src="image.png"/); assert.match(html,/src="https:\/\/example.org\/a.png"/);
+  assert.equal((html.match(/data-jis-image=/g)||[]).length,2);
+  assert.match(html,/width: 320px; max-width: 100%; height: 180px/);
+  assert.equal(sourceWidth(800,600,75),450); assert.equal(sourceWidth(100,600,25),25);
+  for (const scale of [{percent:0},{percent:101},{width:'10; color:red',mode:'pixels'},{width:320,height:0,mode:'pixels'}]) {
+    env.outputItem.metadata.metadata.jupyterImageScalerSources['image.png']=scale;
+    assert.doesNotMatch(md.render('![local](image.png)',env),/style=|width=/);
+  }
+});

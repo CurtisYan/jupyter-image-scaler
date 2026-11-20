@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "checks": [
+    "Local image changes visibly at all four percentages with current preset highlighted",
+    "Hosted image changes visibly at all four percentages with current preset highlighted",
+    "Gear menu applies custom dimensions to a local file image",
+    "UI changes save without rewriting Markdown or embedding image data"
+  ]
+}

@@ -1,8 +1,8 @@
 {
   "name": "jupyter-image-scaler",
-  "displayName": "Jupyter Image Scaler · 附件图片缩放",
-  "description": "Notebook Markdown 附件图片悬浮缩放、自定义比例与尺寸快捷档位。",
-  "version": "1.2.0",
+  "displayName": "Jupyter Image Scaler · 图片缩放",
+  "description": "Notebook Markdown 本地图片、图床图片和附件图片悬浮缩放、自定义比例与尺寸快捷档位。",
+  "version": "1.3.0",
   "publisher": "local-notebook-tools",
   "license": "MIT",
   "engines": {
@@ -34,38 +34,38 @@
     "commands": [
       {
         "command": "jupyterImageScaler.choose",
-        "title": "附件图片缩放：选择档位",
+        "title": "图片缩放：选择档位",
         "category": "Notebook",
         "icon": "$(zoom-in)"
       },
       {
         "command": "jupyterImageScaler.scale25",
-        "title": "附件图片缩放：25%",
+        "title": "图片缩放：25%",
         "category": "Notebook"
       },
       {
         "command": "jupyterImageScaler.scale50",
-        "title": "附件图片缩放：50%",
+        "title": "图片缩放：50%",
         "category": "Notebook"
       },
       {
         "command": "jupyterImageScaler.scale75",
-        "title": "附件图片缩放：75%",
+        "title": "图片缩放：75%",
         "category": "Notebook"
       },
       {
         "command": "jupyterImageScaler.scale100",
-        "title": "附件图片缩放：100%（恢复）",
+        "title": "图片缩放：100%（恢复）",
         "category": "Notebook"
       },
       {
         "command": "jupyterImageScaler.applyPreset",
-        "title": "附件图片缩放：应用快捷档位",
+        "title": "图片缩放：应用快捷档位",
         "category": "Notebook"
       },
       {
         "command": "jupyterImageScaler.settings",
-        "title": "附件图片缩放：设置快捷档位",
+        "title": "图片缩放：设置快捷档位",
         "category": "Notebook",
         "icon": "$(gear)"
       }
@@ -90,7 +90,7 @@
     "notebookRenderer": [
       {
         "id": "local-notebook-tools.jupyter-image-scaler-renderer",
-        "displayName": "Notebook attachment image scale",
+        "displayName": "Notebook Markdown image scale",
         "entrypoint": {
           "extends": "vscode.markdown-it-renderer",
           "path": "./dist/renderer.js"

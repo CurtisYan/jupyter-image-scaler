@@ -1,10 +1,15 @@
 const defaults = [25, 50, 75, 100].map(percent => ({percent}));
 const records = new Map();
 let schedule = () => {};
-function validScale(scale) {
-  return Number.isSafeInteger(scale?.width) && scale.width >= 1 && scale.width <= 1000000 &&
-    ((Number.isInteger(scale.percent) && scale.percent >= 1 && scale.percent < 100) ||
-      (scale.mode === 'pixels' && scale.width <= 10000 && (scale.height === undefined || (Number.isInteger(scale.height) && scale.height >= 1 && scale.height <= 10000))));
+function validScale(scale, source = false) {
+  const percent = Number.isInteger(scale?.percent) && scale.percent >= 1 && scale.percent < 100;
+  const width = Number.isSafeInteger(scale?.width) && scale.width >= 1 && scale.width <= 1000000;
+  return (percent && (source || width)) || (width && scale.mode === 'pixels' && scale.width <= 10000 && (scale.height === undefined || (Number.isInteger(scale.height) && scale.height >= 1 && scale.height <= 10000)));
+}
+// Source images are already loaded by VS Code. Read their decoded intrinsic width,
+// without fetching bytes in the extension host (including authenticated URLs).
+export function sourceWidth(naturalWidth, availableWidth, percent) {
+  return Math.min(naturalWidth, availableWidth) * percent / 100;
 }
 export function extend(md) {
   md.core.ruler.after('inline', 'jupyter_image_scaler', state => {
@@ -14,11 +19,14 @@ export function extend(md) {
     const visit = tokens => {
       for (const token of tokens || []) {
         const src = token.type === 'image' ? token.attrGet('src') : undefined;
-        if (src?.startsWith('attachment:')) {
-          let name = src.slice(11);
-          try { name = decodeURIComponent(name); } catch { /* literal escape */ }
-          const scale = scales && Object.hasOwn(scales, name) ? scales[name] : undefined;
-          if (validScale(scale)) {
+        if (src) {
+          const attachment = src.startsWith('attachment:');
+          let name = attachment ? src.slice(11) : src;
+          if (attachment) try { name = decodeURIComponent(name); } catch { /* literal escape */ }
+          const entries = attachment ? scales : output?.metadata?.metadata?.jupyterImageScalerSources;
+          const scale = entries && Object.hasOwn(entries, name) ? entries[name] : undefined;
+          const valid = validScale(scale, !attachment);
+          if (valid && (attachment || scale.mode === 'pixels')) {
             token.attrSet('width', String(scale.width));
             token.attrSet('style', scale.mode === 'pixels'
               ? `width: ${scale.width}px; max-width: 100%; height: ${scale.height ? `${scale.height}px` : 'auto'};`
@@ -27,7 +35,7 @@ export function extend(md) {
           if (output) {
             const key = `${output.id}:${index++}`;
             token.attrSet('data-jis-image', key);
-            records.set(key, {cellId: output.metadata?.id, source: state.src, name, scale: validScale(scale) ? scale : {percent:100}});
+            records.set(key, {cellId: output.metadata?.id, source: state.src, name, imageId: attachment ? `attachment:${name}` : src, sourceImage: !attachment, scale: valid ? scale : {percent:100}});
           }
         }
         if (token.children) visit(token.children);
@@ -65,6 +73,11 @@ export async function activate(context) {
     const wrap = bar.parentElement;
     if (!wrap?.isConnected) return;
     const image = wrap.querySelector('img');
+    const record = bars.get(bar);
+    if (record?.sourceImage && record.scale.percent && record.scale.percent !== 100 && image.naturalWidth && wrap.clientWidth) {
+      image.style.width = `${sourceWidth(image.naturalWidth, wrap.clientWidth, record.scale.percent)}px`;
+      image.style.maxWidth = '100%'; image.style.height = 'auto';
+    }
     if (toolbarStyle === 'overlay') {
       wrap.dataset.placement = 'overlay'; bar.setAttribute('aria-orientation','horizontal');
       wrap.style.paddingBottom = ''; wrap.style.minHeight = '';
@@ -123,7 +136,7 @@ export async function activate(context) {
       for (const type of ['pointerdown', 'mousedown', 'dblclick']) button.addEventListener(type, e => e.stopPropagation());
       button.addEventListener('click', e => {
         e.preventDefault(); e.stopPropagation();
-        context.postMessage({type: preset ? 'apply' : 'settings', cellId: record.cellId, source: record.source, name: record.name, preset});
+        context.postMessage({type: preset ? 'apply' : 'settings', cellId: record.cellId, source: record.source, name: record.name, imageId: record.imageId, preset});
       });
       bar.append(button);
     }
@@ -136,7 +149,8 @@ export async function activate(context) {
       const wrap = document.createElement('span'); wrap.className = 'jis-wrap';
       const bar = document.createElement('span'); bar.className = 'jis-tools';
       bar.setAttribute('role','toolbar'); bar.setAttribute('aria-label', `图片缩放 · ${record.name}`);
-      image.before(wrap); wrap.append(image, bar); fill(bar, record); bars.set(bar, record); sizes.observe(image); sizes.observe(wrap);
+      image.before(wrap); wrap.append(image, bar); bars.set(bar, record); fill(bar, record);
+      image.addEventListener('load', () => position(bar)); sizes.observe(image); sizes.observe(wrap);
       if (!root.querySelector('style[data-jis-style]')) {
         const style = document.createElement('style'); style.dataset.jisStyle = ''; style.textContent = css; (root.head || root).append(style);
       }

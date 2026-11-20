@@ -1,5 +1,5 @@
 const vscode = require('vscode');
-const { PRESETS, referencedImages, withScale, normalizePreset, presetLabel } = require('./core.cjs');
+const { PRESETS, imageReferences, withImageScale, normalizePreset, presetLabel } = require('./core.cjs');
 function resolveCell(arg) {
   if (arg?.cell?.document) return arg.cell;
   if (arg?.document && arg?.notebook) return arg;
@@ -17,8 +17,9 @@ function getPresets() {
   }
   return values.length ? values : PRESETS.map(percent => ({percent}));
 }
-function currentPreset(cell, name) {
-  const value = cell.metadata.metadata?.jupyterImageScaler?.[name];
+function currentPreset(cell, ref) {
+  const entries = cell.metadata.metadata?.[ref.kind === 'attachment' ? 'jupyterImageScaler' : 'jupyterImageScalerSources'];
+  const value = entries && Object.hasOwn(entries, ref.name) ? entries[ref.name] : undefined;
   return value?.mode === 'pixels' ? {width:value.width, ...(value.height ? {height:value.height} : {})} : {percent:value?.percent || 100};
 }
 function choosePercent(name, current) {
@@ -27,7 +28,7 @@ function choosePercent(name, current) {
     let done = false;
     const subscriptions = [];
     const finish = value => { if (done) return; done = true; subscriptions.forEach(s => s.dispose()); picker.dispose(); resolve(value); };
-    picker.title = `附件图片缩放 · ${name}`;
+    picker.title = `图片缩放 · ${name}`;
     picker.placeholder = '选择快捷档位';
     picker.items = getPresets().map(value => ({label:presetLabel(value), value, detail:JSON.stringify(value) === JSON.stringify(current) ? '当前档位' : undefined}));
     subscriptions.push(picker.onDidAccept(() => finish(picker.selectedItems[0]?.value)), picker.onDidHide(() => finish()));
@@ -115,22 +116,24 @@ async function settings(cell, name) {
 async function scale(arg, preset, explicitName) {
   const cell = resolveCell(arg);
   if (!cell || cell.notebook.notebookType !== 'jupyter-notebook' || cell.kind !== vscode.NotebookCellKind.Markup) {
-    vscode.window.showInformationMessage('请先选中 Jupyter Notebook 中含有附件图片的 Markdown 单元格。');
+    vscode.window.showInformationMessage('请先选中 Jupyter Notebook 中含有图片的 Markdown 单元格。');
     return false;
   }
   const source = cell.document.getText();
-  const names = referencedImages(source).filter(name => Object.hasOwn(cell.metadata.attachments || {}, name));
-  if (!names.length) {
-    vscode.window.showInformationMessage('当前单元格没有 Markdown 附件图片。请使用 ![图片](attachment:image.png)，不要改成 HTML <img>。');
+  const refs = imageReferences(source).filter(ref => ref.kind !== 'attachment' || Object.hasOwn(cell.metadata.attachments || {}, ref.name));
+  if (!refs.length) {
+    vscode.window.showInformationMessage('当前单元格没有可缩放的 Markdown 图片。支持 ![图片](image.png)、HTTP(S) 图片链接和 attachment: 附件；请先确认图片能正常显示。');
     return false;
   }
-  let name = explicitName && names.includes(explicitName) ? explicitName : undefined;
-  if (!name && names.length === 1) name = names[0];
-  if (!name) name = (await vscode.window.showQuickPick(names.map(name => ({label: name})), { title: '选择要缩放的附件图片', placeHolder: '同一单元格中，同名附件的所有引用会一起缩放' }))?.label;
-  if (!name) return false;
+  let ref = refs.find(ref => ref.id === explicitName || (ref.kind === 'attachment' && ref.name === explicitName));
+  if (explicitName && !ref) return false;
+  if (!ref && refs.length === 1) ref = refs[0];
+  if (!ref) ref = (await vscode.window.showQuickPick(refs.map(ref => ({label:ref.name, description:ref.kind === 'attachment' ? 'Notebook 附件' : '图片链接', ref})), {title:'选择要缩放的图片', placeHolder:'同一单元格中，相同图片引用会一起缩放'}))?.ref;
+  if (!ref) return false;
+  const name = ref.name;
   let percent = preset;
   if (!percent) {
-    const current = currentPreset(cell, name);
+    const current = currentPreset(cell, ref);
     percent = await choosePercent(name, current);
   }
   if (!percent) return false;
@@ -139,17 +142,17 @@ async function scale(arg, preset, explicitName) {
     vscode.window.showWarningMessage('单元格已发生变化，请重新选择图片。');
     return false;
   }
-  const metadata = withScale(cell.metadata, name, percent);
+  const metadata = withImageScale(cell.metadata, ref, percent);
   const edit = new vscode.WorkspaceEdit();
   edit.set(cell.notebook.uri, [vscode.NotebookEdit.updateCellMetadata(cell.index, metadata)]);
   const applied = await vscode.workspace.applyEdit(edit);
   if (!applied) throw new Error('Notebook 无法应用修改，请检查文件是否可编辑。');
-  vscode.window.setStatusBarMessage(`附件图片 ${name}：${presetLabel(normalizePreset(percent))}（原图保持完整，保存 Notebook 后保留比例）`, 4500);
+  vscode.window.setStatusBarMessage(`图片 ${name}：${presetLabel(normalizePreset(percent))}（原图保持完整，保存 Notebook 后保留比例）`, 4500);
   return true;
 }
 function activate(context) {
   const run = (arg, preset, name) => scale(arg, preset, name).catch(error => {
-    vscode.window.showErrorMessage(`附件图片缩放失败：${error.message}`);
+    vscode.window.showErrorMessage(`图片缩放失败：${error.message}`);
     return false;
   });
   context.subscriptions.push(vscode.commands.registerCommand('jupyterImageScaler.choose', arg => run(arg)));
@@ -165,21 +168,21 @@ function activate(context) {
       try {
         if (message?.type === 'ready') { await sendPresets(editor); return; }
         if (!['apply','settings'].includes(message?.type) || typeof message.source !== 'string' || typeof message.name !== 'string') return;
-        const cells = editor.notebook.getCells().filter(cell => cell.kind === vscode.NotebookCellKind.Markup && cell.document.getText() === message.source && referencedImages(message.source).includes(message.name) && Object.hasOwn(cell.metadata.attachments || {}, message.name));
+        const cells = editor.notebook.getCells().filter(cell => cell.kind === vscode.NotebookCellKind.Markup && cell.document.getText() === message.source && imageReferences(message.source).some(ref => (ref.id === (message.imageId || message.name) || (ref.kind === 'attachment' && ref.name === message.name)) && (ref.kind !== 'attachment' || Object.hasOwn(cell.metadata.attachments || {}, ref.name))));
         const exact = typeof message.cellId === 'string' ? cells.filter(cell => cell.metadata.id === message.cellId) : [];
         const cell = exact.length === 1 ? exact[0] : cells.length === 1 ? cells[0] : undefined;
         if (!cell) { vscode.window.showWarningMessage('无法准确定位这张图片，请使用该单元格右上角的缩放菜单。'); return; }
-        if (message.type === 'apply') await run(cell, normalizePreset(message.preset), message.name);
-        else await settings(cell, message.name);
+        if (message.type === 'apply') await run(cell, normalizePreset(message.preset), message.imageId || message.name);
+        else await settings(cell, message.imageId || message.name);
       } catch(error) { vscode.window.showErrorMessage(`图片缩放失败：${error.message}`); }
     }),
     vscode.notebooks.registerNotebookCellStatusBarItemProvider('jupyter-notebook', {
       onDidChangeCellStatusBarItems: changes.event,
       provideCellStatusBarItems(cell) {
-        if (cell.kind !== vscode.NotebookCellKind.Markup || !referencedImages(cell.document.getText()).length) return [];
+        if (cell.kind !== vscode.NotebookCellKind.Markup || !imageReferences(cell.document.getText()).length) return [];
         return [...getPresets(), null].map((preset, index) => {
           const item = new vscode.NotebookCellStatusBarItem(preset ? presetLabel(preset) : '$(gear)', vscode.NotebookCellStatusBarAlignment.Left);
-          item.command = {command:preset ? 'jupyterImageScaler.applyPreset' : 'jupyterImageScaler.settings', title:'附件图片缩放', arguments:[cell, ...(preset ? [preset] : [])]};
+          item.command = {command:preset ? 'jupyterImageScaler.applyPreset' : 'jupyterImageScaler.settings', title:'图片缩放', arguments:[cell, ...(preset ? [preset] : [])]};
           item.tooltip = preset ? `图片缩放 ${presetLabel(preset)}` : '设置快捷档位和自定义尺寸';
           item.priority = 100 - index;
           return item;

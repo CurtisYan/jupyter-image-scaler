@@ -2,73 +2,44 @@
 
 English | [简体中文](README.zh-CN.md)
 
-Resize Markdown attachment images in VS Code Jupyter Notebooks with a compact hover toolbar. Switch between **25%, 50%, 75%, and 100%**, add custom percentages or pixel dimensions, and keep the original image data intact.
+Resize images in VS Code Jupyter Notebook Markdown cells using a compact hover toolbar. Supports **local files, hosted URLs, and embedded attachments**, keeping your Markdown and original images unchanged.
 
-> The extension UI is currently in Chinese. After installing or updating, save your Notebook and run **Developer: Reload Window** in the VS Code window where you use it. An already-open Notebook may still be using the previous image renderer.
+![Image scaling toolbar](docs/images/外部菜单.png)
 
-## Preview
+## Install
 
-Hover over a rendered image to show its shortcuts. The active preset is highlighted. Use the gear to manage presets or move the toolbar outside the image with automatic placement.
+1. Download the `.vsix` from [Releases](https://github.com/CurtisYan/jupyter-image-scaler/releases/latest).
+2. In VS Code: **Extensions → … → Install from VSIX…**.
+3. Save your Notebook, then run **Developer: Reload Window**.
 
-![Compact external toolbar with percentage and custom-size shortcuts](docs/images/外部菜单.png)
+Render a Markdown cell and hover over its image to show the toolbar. Existing references work as-is:
 
-## Install and use
+```md
+![local](image.png)
+![hosted](https://example.com/image.png)
+![attachment](attachment:image.png)
+```
 
-1. Download `jupyter-image-scaler-1.2.0.vsix` from [GitHub Releases](https://github.com/CurtisYan/jupyter-image-scaler/releases/latest).
-2. In VS Code, open Extensions → **…** → **Install from VSIX…**, then select the downloaded file.
-3. Save your work and run **Developer: Reload Window** from the Command Palette.
-4. Open an `.ipynb` file and paste an image into a Markdown cell. Keep the native attachment syntax: `![image.png](attachment:image.png)`.
-5. Render the cell, hover over the image, and click a preset. Save the Notebook to retain its display size. **100%** restores the default display.
+## Features
 
-You can also use the buttons below a cell while editing, the magnifier in its toolbar, or **Cmd+Alt+I** on macOS / **Ctrl+Alt+I** on Windows and Linux. Search for **附件图片缩放** in the Command Palette. If edit-mode buttons are hidden, set **Notebook: Show Cell Status Bar** to `visible`.
+- **25% / 50% / 75% / 100%** presets, relative to the default visible width; 100% resets.
+- Custom percentages and pixel sizes: `320` preserves aspect ratio; `320x180` sets both dimensions.
+- Save, reorder, and remove up to 12 shortcuts through the gear menu.
+- Compact overlay or **outside the image (automatic placement)** toolbar.
+- Sizes saved with the Notebook; native undo/redo supported.
 
-Try the [example Notebook](https://github.com/CurtisYan/jupyter-image-scaler/blob/main/examples/附件图片缩放示例.ipynb).
+Also available through edit-mode buttons, the cell-toolbar magnifier, or **Cmd+Alt+I / Ctrl+Alt+I**. UI currently in Chinese.
 
-## Presets and toolbar settings
+Requires **VS Code 1.100+**. Covers `.ipynb` Markdown images, excluding code outputs, HTML `<img>`, and standalone `.md` previews. Hosted images must load normally in VS Code. Other editors may ignore saved sizes. Updates currently require installing a newer VSIX; GitHub Releases do not enable Marketplace auto-updates.
 
-Click the **gear** beside an image:
-
-- **Custom percentage:** add any integer from 1 to 100 as a shortcut.
-- **Custom dimensions:** enter `320` for a 320px width with the aspect ratio preserved, or `320x180` for exact dimensions. Specifying both dimensions can change the aspect ratio. Apply to the current image and optionally save it as a preset, or add a size preset directly.
-- **Reorder shortcuts:** move a preset up, down, to the start, or to the end. Changes save immediately and also update edit-mode buttons.
-- **Toolbar style:** choose a top-left overlay or **outside the image (automatic placement)**. Outside mode uses available space beside the image; if neither side fits, it reserves space below. It keeps the image size and avoids covering subsequent content.
-- **Manage presets:** delete shortcuts or restore the four defaults. Up to 12 presets are supported.
-
-Presets and their order are saved in the user setting `jupyterImageScaler.presets`; the toolbar style is stored in `jupyterImageScaler.toolbarStyle`. They are shared across Notebooks. Each image's applied size is saved separately in its Notebook. The toolbar can also be shown by keyboard focus using Tab.
-
-## How scaling works
-
-- Percentages use the **default visible width**: the smaller of the original image width and the available cell width. A large image at 75% occupies three quarters of the cell width; a small image at 100% retains its natural width.
-- Each selection starts from that default width. Selecting 25% and then 50% gives half of the default width. Percentage sizes adapt when the window width changes; pixel widths are also limited by the available cell width.
-- Only the chosen attachment in the current cell changes. Repeated references to that attachment in the same cell share a size; other cells are independent. If an older cell cannot be uniquely identified, use its cell-toolbar magnifier.
-- Original bytes stay in `.ipynb` attachments. Display settings are stored in `metadata.jupyterImageScaler`, with native Notebook undo, redo, and save support.
-- No network requests, telemetry, or Python kernel are needed. Runtime dependencies are bundled; installing the extension does not require Node.js.
-
-## Compatibility and updates
-
-Requires **VS Code 1.100.0 or later**. Tested in a real window on **macOS with VS Code 1.145.2**; other platforms and older versions have not had real-window testing. Only Markdown **attachment images** are supported; code outputs, remote images, and external image files are outside the current scope.
-
-Keep the simple native attachment syntax shown above. Do not replace it with `<img src="attachment:...">`: VS Code's attachment renderer resolves Markdown image tokens. Prefer names generated by native paste; URL-encoded names, reference-style images, and image titles can encounter VS Code attachment-cleanup limitations on save. This extension does not rewrite the source or replace that cleanup process.
-
-Custom sizes require this extension to display. JupyterLab, GitHub previews, other editors, and export tools may ignore the size metadata; the original image remains embedded. Damaged images or unsupported dimensions produce an error without changing the attachment.
-
-**Updates:** this extension is distributed as a VSIX through GitHub Releases and is not published to Visual Studio Marketplace. VS Code's Auto Update checks the extension gallery, not GitHub tags or Releases. Download a newer VSIX and install it to update, then reload the window. See [VS Code's extension documentation](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#extension-auto-update).
+[Usage details](https://github.com/CurtisYan/jupyter-image-scaler/blob/main/docs/usage.md) · [Example Notebook](https://github.com/CurtisYan/jupyter-image-scaler/blob/main/examples/附件图片缩放示例.ipynb) · [Validation](https://github.com/CurtisYan/jupyter-image-scaler/blob/main/docs/v1.3.0-tests.md)
 
 ## Development
 
 ```sh
 npm ci
 npm test
-npm run build
-npm run package -- --out releases/jupyter-image-scaler-1.2.0.vsix
+npm run package -- --out releases/jupyter-image-scaler-1.3.0.vsix
 ```
-
-- `src/`: extension commands, image metadata logic, and Notebook renderer.
-- `test/`: unit, extension-host, and interface tests; `test/results/` contains recorded results.
-- `examples/`: sample Notebook.
-- `docs/`: screenshots, test records, and [earlier extension research (Chinese)](https://github.com/CurtisYan/jupyter-image-scaler/blob/main/docs/extension-research.zh-CN.md).
-- `releases/`: installable VSIX packages. `dist/` and `node_modules/` are generated locally.
-
-Version 1.2.0 passed 8 unit tests, 9 extension-host checks, and 16 interface checks against the installed VSIX. See the [test record (Chinese)](https://github.com/CurtisYan/jupyter-image-scaler/blob/main/docs/v1.2.0-测试记录.md). Integration tooling: `test/integration.cjs` runs through VS Code's `--extensionDevelopmentPath` / `--extensionTestsPath`; `test/hover.cjs` exercises the hover UI. Use `JIS_RUN` and `JIS_CDP` for an isolated test directory and local debugging port, and close that test window afterward.
 
 [MIT License](https://github.com/CurtisYan/jupyter-image-scaler/blob/main/LICENSE).

@@ -20,6 +20,30 @@ function referencedImages(source) {
   });
   return [...names];
 }
+// Keep source URLs as identities; never resolve, fetch, or rewrite them here.
+function imageReferences(source) {
+  const refs = new Map();
+  walk(parser.parse(source, {}), token => {
+    const src = token.attrGet('src');
+    if (!src) return;
+    const attachment = src.startsWith('attachment:');
+    const name = attachment ? decodeName(src) : src;
+    const id = attachment ? `attachment:${name}` : src;
+    refs.set(id, {id, name, kind: attachment ? 'attachment' : 'source'});
+  });
+  return [...refs.values()];
+}
+function withImageScale(metadata, ref, preset) {
+  if (ref.kind === 'attachment') return withScale(metadata, ref.name, preset);
+  const value = normalizePreset(preset);
+  const inner = {...(metadata.metadata || {})};
+  const entries = {...(inner.jupyterImageScalerSources || {})};
+  if (value.percent === 100) delete entries[ref.id];
+  else Object.defineProperty(entries, ref.id, {value: value.percent ? value : {...value, mode:'pixels'}, enumerable:true, configurable:true, writable:true});
+  if (Object.keys(entries).length) inner.jupyterImageScalerSources = entries;
+  else delete inner.jupyterImageScalerSources;
+  return {...metadata, metadata:inner};
+}
 function dimensions(bundle) {
   if (!bundle || typeof bundle !== 'object') throw new Error('找不到该图片的附件数据。');
   // Match VS Code's built-in attachment renderer, which uses the first MIME entry.
@@ -51,4 +75,4 @@ function withScale(metadata, name, preset) {
   else delete inner.jupyterImageScaler;
   return { ...metadata, metadata: inner };
 }
-module.exports = { PRESETS, decodeName, walk, referencedImages, dimensions, withScale, normalizePreset, presetLabel };
+module.exports = { PRESETS, imageReferences, withImageScale, decodeName, walk, referencedImages, dimensions, withScale, normalizePreset, presetLabel };

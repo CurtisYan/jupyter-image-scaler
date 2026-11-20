@@ -1,0 +1,20 @@
+{
+  "ok": true,
+  "checks": [
+    "Saved hosted-image percentage applies after delayed image load",
+    "Local image hover presets have four distinct sizes and repeated references share the size",
+    "Small local image uses its natural width rather than the container width",
+    "Hosted image hover presets work without modifying the URL or using a CORS fetch",
+    "Custom pixel dimensions render on ordinary images",
+    "Saved percentage survives serialization, responds to resizing, and works with external toolbar",
+    "Source references stay unchanged; no attachment conversion or browser errors"
+  ],
+  "requests": [
+    "/",
+    "/markdown.js",
+    "/renderer.mjs",
+    "/image.png",
+    "/small.svg",
+    "/delayed.svg"
+  ]
+}
