@@ -3,6 +3,8 @@
 English | [简体中文](README.zh-CN.md)
 
 Resize images in VS Code Jupyter Notebook Markdown cells using a compact hover toolbar. Supports **local files, hosted URLs, and embedded attachments**, keeping your Markdown and original images unchanged.
+通过紧凑悬浮菜单缩放 VS Code Jupyter Notebook Markdown 图片，支持 本地文件、图床链接和内嵌附件，不改写 Markdown 或原图。
+
 
 ![Image scaling toolbar](docs/images/外部菜单.png)
 
